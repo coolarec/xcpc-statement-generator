@@ -53,7 +53,7 @@
             ];
             shellHook = ''
               export FONTCONFIG_FILE=${pkgs.makeFontsConf {
-                fontDirectories = with pkgs; [ foundertype-fonts cm_unicode ];
+                fontDirectories = with pkgs; [ foundertype-fonts cm_unicode newcomputermodern ];
               }}
             '';
           };
