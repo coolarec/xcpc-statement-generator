@@ -2,6 +2,7 @@ import { type FC } from "react";
 import { Card, Form, Input, Button, Space, Switch, Select, Upload, App, Tooltip, Typography, Dropdown } from "antd";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash, faInbox, faCopy, faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import Editor from "@monaco-editor/react";
 import type { ContestWithImages, ProblemFormat, ImageData } from "@/types/contest";
 import { saveImageToDB, deleteImageFromDB } from "@/utils/indexedDBUtils";
 
@@ -244,39 +245,83 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                     style={{ flex: 1 }}
                   />
                 </div>
-                <Input.TextArea
-                  size="small"
-                  placeholder="题目描述"
-                  value={problem.statement.description}
-                  onChange={(e) => updateContestData((d) => { d.problems[index].statement.description = e.target.value; })}
-                  rows={3}
-                />
-                <Input.TextArea
-                  size="small"
-                  placeholder="输入格式"
-                  value={problem.statement.input || ""}
-                  onChange={(e) => updateContestData((d) => { d.problems[index].statement.input = e.target.value; })}
-                  rows={2}
-                />
-                <Input.TextArea
-                  size="small"
-                  placeholder="输出格式"
-                  value={problem.statement.output || ""}
-                  onChange={(e) => updateContestData((d) => { d.problems[index].statement.output = e.target.value; })}
-                  rows={2}
-                />
-                <Input.TextArea
-                  size="small"
-                  placeholder="提示"
-                  value={problem.statement.notes || ""}
-                  onChange={(e) => updateContestData((d) => { d.problems[index].statement.notes = e.target.value; })}
-                  rows={2}
-                />
+                <div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>题目描述</div>
+                  <Editor
+                    height="150px"
+                    language={problem.problem.format === "markdown" ? "markdown" : problem.problem.format === "typst" ? "plaintext" : "latex"}
+                    value={problem.statement.description}
+                    onChange={(value) => updateContestData((d) => { d.problems[index].statement.description = value || ""; })}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 12,
+                      lineNumbers: "off",
+                      scrollBeyondLastLine: false,
+                      wordWrap: "on",
+                      wrappingIndent: "same",
+                    }}
+                    theme="vs-light"
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>输入格式</div>
+                  <Editor
+                    height="100px"
+                    language={problem.problem.format === "markdown" ? "markdown" : problem.problem.format === "typst" ? "plaintext" : "latex"}
+                    value={problem.statement.input || ""}
+                    onChange={(value) => updateContestData((d) => { d.problems[index].statement.input = value || ""; })}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 12,
+                      lineNumbers: "off",
+                      scrollBeyondLastLine: false,
+                      wordWrap: "on",
+                      wrappingIndent: "same",
+                    }}
+                    theme="vs-light"
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>输出格式</div>
+                  <Editor
+                    height="100px"
+                    language={problem.problem.format === "markdown" ? "markdown" : problem.problem.format === "typst" ? "plaintext" : "latex"}
+                    value={problem.statement.output || ""}
+                    onChange={(value) => updateContestData((d) => { d.problems[index].statement.output = value || ""; })}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 12,
+                      lineNumbers: "off",
+                      scrollBeyondLastLine: false,
+                      wordWrap: "on",
+                      wrappingIndent: "same",
+                    }}
+                    theme="vs-light"
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>提示</div>
+                  <Editor
+                    height="100px"
+                    language={problem.problem.format === "markdown" ? "markdown" : problem.problem.format === "typst" ? "plaintext" : "latex"}
+                    value={problem.statement.notes || ""}
+                    onChange={(value) => updateContestData((d) => { d.problems[index].statement.notes = value || ""; })}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 12,
+                      lineNumbers: "off",
+                      scrollBeyondLastLine: false,
+                      wordWrap: "on",
+                      wrappingIndent: "same",
+                    }}
+                    theme="vs-light"
+                  />
+                </div>
 
                 <div style={{ fontSize: 12, color: "#666" }}>样例输入输出:</div>
                 {problem.problem.samples.map((sample, sIdx) => (
                   <div key={sIdx} style={{ marginBottom: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 12 }}>样例 {sIdx + 1}</span>
                       {problem.problem.samples.length > 1 && (
                         <Button
@@ -288,21 +333,39 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                         />
                       )}
                     </div>
-                    <Input.TextArea
-                      size="small"
-                      placeholder="输入"
+                    <div style={{ fontSize: 11, color: "#666", marginBottom: 2 }}>输入</div>
+                    <Editor
+                      height="60px"
+                      language="plaintext"
                       value={sample.input}
-                      onChange={(e) => updateContestData((d) => { d.problems[index].problem.samples[sIdx].input = e.target.value; })}
-                      rows={2}
-                      style={{ marginBottom: 4, fontFamily: "monospace" }}
+                      onChange={(value) => updateContestData((d) => { d.problems[index].problem.samples[sIdx].input = value || ""; })}
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 12,
+                        lineNumbers: "off",
+                        scrollBeyondLastLine: false,
+                        wordWrap: "off",
+                        wrappingIndent: "same",
+                        fontFamily: "monospace",
+                      }}
+                      theme="vs-light"
                     />
-                    <Input.TextArea
-                      size="small"
-                      placeholder="输出"
+                    <div style={{ fontSize: 11, color: "#666", marginBottom: 2, marginTop: 4 }}>输出</div>
+                    <Editor
+                      height="60px"
+                      language="plaintext"
                       value={sample.output}
-                      onChange={(e) => updateContestData((d) => { d.problems[index].problem.samples[sIdx].output = e.target.value; })}
-                      rows={2}
-                      style={{ fontFamily: "monospace" }}
+                      onChange={(value) => updateContestData((d) => { d.problems[index].problem.samples[sIdx].output = value || ""; })}
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 12,
+                        lineNumbers: "off",
+                        scrollBeyondLastLine: false,
+                        wordWrap: "off",
+                        wrappingIndent: "same",
+                        fontFamily: "monospace",
+                      }}
+                      theme="vs-light"
                     />
                   </div>
                 ))}
