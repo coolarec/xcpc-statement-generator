@@ -1,0 +1,15 @@
+{
+  "loadExample": "Load Example",
+  "importPolygonPackage": "Import Polygon Package",
+  "importConfig": "Import Config",
+  "exportConfig": "Export Config",
+  "exportPdf": "Export PDF",
+  "continue": "Continue",
+  "cancel": "Cancel",
+  "loading": "Loading...",
+  "confirm": "Confirm",
+  "clearCache": "Clear Cache",
+  "refresh": "Refresh",
+  "add": "Add",
+  "delete": "Delete"
+}

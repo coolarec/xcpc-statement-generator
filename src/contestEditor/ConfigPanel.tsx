@@ -3,6 +3,7 @@ import { Card, Form, Input, Button, Space, Switch, Select, Upload, App, Tooltip,
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash, faInbox, faCopy, faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import Editor from "@monaco-editor/react";
+import { useTranslation } from "react-i18next";
 import type { ContestWithImages, ProblemFormat, ImageData } from "@/types/contest";
 import { saveImageToDB, deleteImageFromDB } from "@/utils/indexedDBUtils";
 
@@ -13,6 +14,7 @@ interface ConfigPanelProps {
 
 const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) => {
   const { message } = App.useApp();
+  const { t } = useTranslation();
 
   // Add image handler
   const handleAddImage = async (file: File) => {
@@ -32,7 +34,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
       });
     });
 
-    message.success(`图片 "${file.name}" 上传成功`);
+    message.success(t('messages:imageUploadSuccess', { name: file.name }));
   };
 
   // Delete image handler
@@ -51,7 +53,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
       draft.images.splice(index, 1);
     });
 
-    message.success("图片已删除");
+    message.success(t('messages:imageDeleted'));
   };
 
   // Copy image reference to clipboard
@@ -69,39 +71,39 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
         break;
     }
     navigator.clipboard.writeText(ref);
-    message.success("图片引用已复制到剪贴板");
+    message.success(t('messages:imageCopied'));
   };
 
   return (
     <div className="config-panel">
-      <Card title="比赛配置" size="small" style={{ marginBottom: 16 }}>
+      <Card title={t('editor:contestConfig')} size="small" style={{ marginBottom: 16 }}>
         <Form layout="vertical" size="small">
-          <Form.Item label="比赛标题">
+          <Form.Item label={t('editor:contestTitle')}>
             <Input
               value={contestData.meta.title}
               onChange={(e) => updateContestData((d) => { d.meta.title = e.target.value; })}
-              placeholder="输入比赛标题"
+              placeholder={t('editor:inputPlaceholder', { field: t('editor:contestTitle') })}
             />
           </Form.Item>
-          <Form.Item label="比赛副标题">
+          <Form.Item label={t('editor:contestSubtitle')}>
             <Input
               value={contestData.meta.subtitle}
               onChange={(e) => updateContestData((d) => { d.meta.subtitle = e.target.value; })}
-              placeholder="输入比赛副标题"
+              placeholder={t('editor:inputPlaceholder', { field: t('editor:contestSubtitle') })}
             />
           </Form.Item>
-          <Form.Item label="作者/主办方">
+          <Form.Item label={t('editor:author')}>
             <Input
               value={contestData.meta.author}
               onChange={(e) => updateContestData((d) => { d.meta.author = e.target.value; })}
-              placeholder="输入作者或主办方"
+              placeholder={t('editor:inputPlaceholder', { field: t('editor:author') })}
             />
           </Form.Item>
-          <Form.Item label="比赛日期">
+          <Form.Item label={t('editor:contestDate')}>
             <Input
               value={contestData.meta.date}
               onChange={(e) => updateContestData((d) => { d.meta.date = e.target.value; })}
-              placeholder="输入比赛日期"
+              placeholder={t('editor:inputPlaceholder', { field: t('editor:contestDate') })}
             />
           </Form.Item>
           <Form.Item>
@@ -109,33 +111,33 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
               checked={contestData.meta.enable_titlepage}
               onChange={(checked) => updateContestData((d) => { d.meta.enable_titlepage = checked; })}
             />
-            <span style={{ marginLeft: 8 }}>生成标题页</span>
+            <span style={{ marginLeft: 8 }}>{t('editor:enableTitlepage')}</span>
           </Form.Item>
           <Form.Item>
             <Switch
               checked={contestData.meta.enable_header_footer}
               onChange={(checked) => updateContestData((d) => { d.meta.enable_header_footer = checked; })}
             />
-            <span style={{ marginLeft: 8 }}>显示页眉/页尾</span>
+            <span style={{ marginLeft: 8 }}>{t('editor:enableHeaderFooter')}</span>
           </Form.Item>
           <Form.Item>
             <Switch
               checked={contestData.meta.enable_problem_list}
               onChange={(checked) => updateContestData((d) => { d.meta.enable_problem_list = checked; })}
             />
-            <span style={{ marginLeft: 8 }}>显示试题列表</span>
+            <span style={{ marginLeft: 8 }}>{t('editor:enableProblemList')}</span>
           </Form.Item>
           <Form.Item>
             <Switch
               checked={contestData.meta.language === "en"}
               onChange={(checked) => updateContestData((d) => { d.meta.language = checked ? "en" : "zh"; })}
             />
-            <span style={{ marginLeft: 8 }}>英文模式（默认中文）</span>
+            <span style={{ marginLeft: 8 }}>{t('editor:englishMode')}</span>
           </Form.Item>
         </Form>
       </Card>
 
-      <Card title="图片管理" size="small" style={{ marginBottom: 16 }}>
+      <Card title={t('editor:imageManagement')} size="small" style={{ marginBottom: 16 }}>
         <div className="image-upload-section">
           <Upload.Dragger
             name="add-image"
@@ -143,7 +145,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
               if (
                 !["image/png", "image/jpeg", "image/gif", "image/svg+xml"].includes(file.type)
               ) {
-                message.error("不支持该图片类型，仅支持 PNG/JPEG/GIF/SVG");
+                message.error(t('messages:unsupportedImageType'));
                 return Upload.LIST_IGNORE;
               }
               // Handle file directly here and prevent default upload
@@ -151,7 +153,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                 await handleAddImage(file);
               } catch (err) {
                 console.error("Failed to add image:", err);
-                message.error("图片上传失败");
+                message.error(t('messages:imageUploadFailed'));
               }
               return false; // Prevent default upload behavior
             }}
@@ -161,8 +163,8 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
           >
             <div className="upload-dragger-content">
               <FontAwesomeIcon icon={faInbox} size="2x" style={{ color: "#999" }} />
-              <div style={{ marginTop: 8 }}>点击或拖拽上传图片</div>
-              <div style={{ fontSize: 12, color: "#999" }}>支持 PNG/JPEG/GIF/SVG 格式</div>
+              <div style={{ marginTop: 8 }}>{t('editor:clickOrDragUpload')}</div>
+              <div style={{ fontSize: 12, color: "#999" }}>{t('editor:supportedFormats')}</div>
             </div>
           </Upload.Dragger>
 
@@ -189,14 +191,14 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                         }}
                         trigger={["click"]}
                       >
-                        <Tooltip title="复制引用代码">
+                        <Tooltip title={t('editor:copyReference')}>
                           <Button type="text" size="small">
                             <FontAwesomeIcon icon={faCopy} />
                             <FontAwesomeIcon icon={faChevronDown} style={{ marginLeft: 4, fontSize: 10 }} />
                           </Button>
                         </Tooltip>
                       </Dropdown>
-                      <Tooltip title="删除图片">
+                      <Tooltip title={t('editor:deleteImage')}>
                         <Button
                           type="text"
                           size="small"
@@ -214,25 +216,25 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
 
           {contestData.images.length > 0 && (
             <div style={{ marginTop: 8, fontSize: 12, color: "#666" }}>
-              点击复制按钮选择格式（Typst / LaTeX / Markdown）获取引用代码
+              {t('editor:copyReferenceHint')}
             </div>
           )}
         </div>
       </Card>
 
-      <Card title="题目列表" size="small">
+      <Card title={t('editor:problemList')} size="small">
         <Space direction="vertical" style={{ width: "100%" }} size="small">
           {contestData.problems.map((problem, index) => (
             <Card key={index} size="small" style={{ marginBottom: 8 }}>
               <Space direction="vertical" style={{ width: "100%" }} size="small">
                 <Input
                   size="small"
-                  placeholder={`题目 ${index + 1} 名称`}
+                  placeholder={t('editor:problemName', { number: index + 1 })}
                   value={problem.problem.display_name}
                   onChange={(e) => updateContestData((d) => { d.problems[index].problem.display_name = e.target.value; })}
                 />
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 12, color: "#666", whiteSpace: "nowrap" }}>格式:</span>
+                  <span style={{ fontSize: 12, color: "#666", whiteSpace: "nowrap" }}>{t('editor:format')}</span>
                   <Select<ProblemFormat>
                     size="small"
                     value={problem.problem.format || "latex"}
@@ -246,7 +248,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                   />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>题目描述</div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>{t('editor:problemDescription')}</div>
                   <Editor
                     height="150px"
                     language={problem.problem.format === "markdown" ? "markdown" : problem.problem.format === "typst" ? "plaintext" : "latex"}
@@ -264,7 +266,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                   />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>输入格式</div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>{t('editor:inputFormat')}</div>
                   <Editor
                     height="100px"
                     language={problem.problem.format === "markdown" ? "markdown" : problem.problem.format === "typst" ? "plaintext" : "latex"}
@@ -282,7 +284,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                   />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>输出格式</div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>{t('editor:outputFormat')}</div>
                   <Editor
                     height="100px"
                     language={problem.problem.format === "markdown" ? "markdown" : problem.problem.format === "typst" ? "plaintext" : "latex"}
@@ -300,7 +302,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                   />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>提示</div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>{t('editor:hints')}</div>
                   <Editor
                     height="100px"
                     language={problem.problem.format === "markdown" ? "markdown" : problem.problem.format === "typst" ? "plaintext" : "latex"}
@@ -318,11 +320,11 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                   />
                 </div>
 
-                <div style={{ fontSize: 12, color: "#666" }}>样例输入输出:</div>
+                <div style={{ fontSize: 12, color: "#666" }}>{t('editor:sampleInputOutput')}</div>
                 {problem.problem.samples.map((sample, sIdx) => (
                   <div key={sIdx} style={{ marginBottom: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 12 }}>样例 {sIdx + 1}</span>
+                      <span style={{ fontSize: 12 }}>{t('editor:sampleNumber', { number: sIdx + 1 })}</span>
                       {problem.problem.samples.length > 1 && (
                         <Button
                           type="text"
@@ -333,7 +335,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                         />
                       )}
                     </div>
-                    <div style={{ fontSize: 11, color: "#666", marginBottom: 2 }}>输入</div>
+                    <div style={{ fontSize: 11, color: "#666", marginBottom: 2 }}>{t('editor:input')}</div>
                     <Editor
                       height="60px"
                       language="plaintext"
@@ -350,7 +352,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                       }}
                       theme="vs-light"
                     />
-                    <div style={{ fontSize: 11, color: "#666", marginBottom: 2, marginTop: 4 }}>输出</div>
+                    <div style={{ fontSize: 11, color: "#666", marginBottom: 2, marginTop: 4 }}>{t('editor:output')}</div>
                     <Editor
                       height="60px"
                       language="plaintext"
@@ -376,7 +378,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                   onClick={() => updateContestData((d) => { d.problems[index].problem.samples.push({ input: "", output: "" }); })}
                   style={{ width: "100%" }}
                 >
-                  添加样例
+                  {t('editor:addSample')}
                 </Button>
                 <Button
                   type="text"
@@ -385,7 +387,7 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
                   icon={<FontAwesomeIcon icon={faTrash} />}
                   onClick={() => updateContestData((d) => { d.problems.splice(index, 1); })}
                 >
-                  删除题目
+                  {t('editor:deleteProblem')}
                 </Button>
               </Space>
             </Card>
@@ -396,13 +398,13 @@ const ConfigPanel: FC<ConfigPanelProps> = ({ contestData, updateContestData }) =
             icon={<FontAwesomeIcon icon={faPlus} />}
             onClick={() => updateContestData((d) => {
               d.problems.push({
-                problem: { display_name: `题目 ${d.problems.length + 1}`, samples: [{ input: "", output: "" }] },
+                problem: { display_name: t('editor:problemPlaceholder', { number: d.problems.length + 1 }), samples: [{ input: "", output: "" }] },
                 statement: { description: "", input: "", output: "", notes: "" },
               });
             })}
             style={{ width: "100%" }}
           >
-            添加题目
+            {t('editor:addProblem')}
           </Button>
         </Space>
       </Card>

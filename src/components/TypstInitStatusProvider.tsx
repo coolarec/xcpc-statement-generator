@@ -1,5 +1,6 @@
 import { type FC, type ReactNode, useEffect, useState } from "react";
 import { App, Button, Progress, Space } from "antd";
+import { useTranslation } from "react-i18next";
 import { typstInitInfo, typstInitStatus, fontAccessConfirmResolve } from "@/compiler";
 
 const LoadedText: FC<{ loaded: number; total?: number }> = ({ loaded, total }) => (
@@ -20,6 +21,7 @@ const ProgressBar: FC<{ status: "pending" | "fulfilled" | "rejected"; percent: n
 const TypstInitStatusProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [, setStatus] = useState(typstInitStatus);
   const { notification } = App.useApp();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const key = crypto.randomUUID();
@@ -34,11 +36,11 @@ const TypstInitStatusProvider: FC<{ children: ReactNode }> = ({ children }) => {
       const progressBars = (
         <>
           <div>
-            下载编译器（<LoadedText {...typstInitInfo.compiler} />）
+            {t('messages:downloadCompiler')}（<LoadedText {...typstInitInfo.compiler} />）
             <ProgressBar {...typstInitInfo.compiler} />
           </div>
           <div>
-            下载字体（<LoadedText {...typstInitInfo.font} />）
+            {t('messages:downloadFont')}（<LoadedText {...typstInitInfo.font} />）
             <ProgressBar {...typstInitInfo.font} />
           </div>
         </>
@@ -51,7 +53,7 @@ const TypstInitStatusProvider: FC<{ children: ReactNode }> = ({ children }) => {
             key,
             type: "info",
             placement: "bottomRight",
-            message: "Typst 正在初始化",
+            message: t('messages:typstInitializing'),
             description: progressBars,
             closable: false,
             duration: 0,
@@ -62,17 +64,17 @@ const TypstInitStatusProvider: FC<{ children: ReactNode }> = ({ children }) => {
           key,
           type: "error",
           placement: "bottomRight",
-          message: "Typst 初始化失败",
+          message: t('messages:typstInitFailed'),
           description: progressBars,
           closable: false,
           duration: 0,
           btn: (
             <Space>
               <Button onClick={async () => { await window.caches?.delete("typst-assets"); window.location.reload(); }}>
-                清空缓存
+                {t('common:clearCache')}
               </Button>
               <Button type="primary" onClick={() => window.location.reload()}>
-                刷新
+                {t('common:refresh')}
               </Button>
             </Space>
           ),
@@ -82,7 +84,7 @@ const TypstInitStatusProvider: FC<{ children: ReactNode }> = ({ children }) => {
           key,
           type: "success",
           placement: "bottomRight",
-          message: "Typst 初始化完成",
+          message: t('messages:typstInitialized'),
           description: progressBars,
           duration: 3,
         });
@@ -93,13 +95,13 @@ const TypstInitStatusProvider: FC<{ children: ReactNode }> = ({ children }) => {
           key: fontKey,
           type: "info",
           placement: "bottomRight",
-          message: "请求访问本机字体",
-          description: "允许访问本机字体可减少下载量。",
+          message: t('messages:requestFontAccess'),
+          description: t('messages:fontAccessDescription'),
           closable: false,
           duration: 0,
           btn: (
             <Button type="primary" onClick={() => fontAccessConfirmResolve?.()}>
-              确认
+              {t('common:confirm')}
             </Button>
           ),
         });

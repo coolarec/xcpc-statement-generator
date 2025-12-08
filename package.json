@@ -20,10 +20,12 @@
     "antd": "^6.0.0",
     "axios": "^1.13.2",
     "fontkit": "^2.0.4",
+    "i18next": "^25.7.2",
     "jszip": "^3.10.1",
     "lodash": "^4.17.21",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-i18next": "^16.4.0",
     "use-immer": "^0.11.0"
   },
   "devDependencies": {
