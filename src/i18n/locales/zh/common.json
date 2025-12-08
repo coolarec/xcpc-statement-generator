@@ -1,0 +1,15 @@
+{
+  "loadExample": "载入示例",
+  "importPolygonPackage": "导入 Polygon 比赛包",
+  "importConfig": "导入配置",
+  "exportConfig": "导出配置",
+  "exportPdf": "导出 PDF",
+  "continue": "继续",
+  "cancel": "取消",
+  "loading": "加载中...",
+  "confirm": "确认",
+  "clearCache": "清空缓存",
+  "refresh": "刷新",
+  "add": "添加",
+  "delete": "删除"
+}

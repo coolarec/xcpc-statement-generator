@@ -1,0 +1,27 @@
+{
+  "imageUploadSuccess": "Image \"{{name}}\" uploaded successfully",
+  "imageDeleted": "Image deleted",
+  "imageCopied": "Image reference copied to clipboard",
+  "unsupportedImageType": "Unsupported image type, only PNG/JPEG/GIF/SVG are supported",
+  "imageUploadFailed": "Image upload failed",
+  "exampleLoaded": "Example configuration loaded",
+  "configImportSuccess": "Configuration imported successfully",
+  "configExportSuccess": "Configuration exported successfully",
+  "polygonImportSuccess": "Polygon package imported successfully",
+  "importFailed": "Import failed",
+  "exportFailed": "Export failed",
+  "pdfExportFailed": "PDF export failed",
+  "loadExampleConfirm": {
+    "title": "Load Example Configuration",
+    "content": "Loading example configuration will override all current configurations. Continue?"
+  },
+  "parsingPolygonPackage": "Parsing Polygon package...",
+  "compilationError": "Compilation returned empty data",
+  "typstInitializing": "Typst is initializing",
+  "typstInitialized": "Typst initialized successfully",
+  "typstInitFailed": "Typst initialization failed",
+  "downloadCompiler": "Download Compiler",
+  "downloadFont": "Download Font",
+  "requestFontAccess": "Request Access to Local Fonts",
+  "fontAccessDescription": "Allowing access to local fonts can reduce download size."
+}

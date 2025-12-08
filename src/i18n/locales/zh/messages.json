@@ -1,0 +1,27 @@
+{
+  "imageUploadSuccess": "图片 \"{{name}}\" 上传成功",
+  "imageDeleted": "图片已删除",
+  "imageCopied": "图片引用已复制到剪贴板",
+  "unsupportedImageType": "不支持该图片类型，仅支持 PNG/JPEG/GIF/SVG",
+  "imageUploadFailed": "图片上传失败",
+  "exampleLoaded": "示例配置已载入",
+  "configImportSuccess": "配置导入成功",
+  "configExportSuccess": "配置导出成功",
+  "polygonImportSuccess": "Polygon 比赛包导入成功",
+  "importFailed": "导入失败",
+  "exportFailed": "导出失败",
+  "pdfExportFailed": "PDF 导出失败",
+  "loadExampleConfirm": {
+    "title": "载入示例配置",
+    "content": "载入示例配置将覆盖当前所有配置，是否继续？"
+  },
+  "parsingPolygonPackage": "正在解析 Polygon 比赛包...",
+  "compilationError": "编译返回空数据",
+  "typstInitializing": "Typst 正在初始化",
+  "typstInitialized": "Typst 初始化完成",
+  "typstInitFailed": "Typst 初始化失败",
+  "downloadCompiler": "下载编译器",
+  "downloadFont": "下载字体",
+  "requestFontAccess": "请求访问本机字体",
+  "fontAccessDescription": "允许访问本机字体可减少下载量。"
+}

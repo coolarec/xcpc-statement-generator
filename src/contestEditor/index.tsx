@@ -4,6 +4,7 @@ import { App, Button, Space, Dropdown, Splitter } from "antd";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileArrowDown, faFileImport, faFileExport, faChevronDown, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { debounce } from "lodash";
+import { useTranslation } from "react-i18next";
 
 import type { ContestWithImages, ImageData } from "@/types/contest";
 import { exampleStatements } from "./exampleStatements";
@@ -19,6 +20,7 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
   const [contestData, updateContestData] = useImmer<ContestWithImages>(initialData);
   const [exportDisabled, setExportDisabled] = useState(true);
   const { modal, notification, message } = App.useApp();
+  const { t } = useTranslation();
 
   // Debounced auto-save
   const debouncedSave = useMemo(() =>
@@ -47,10 +49,10 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
 
   const handleLoadExample = async (key: string) => {
     const confirmed = await modal.confirm({
-      title: "载入示例配置",
-      content: "载入示例配置将覆盖当前所有配置，是否继续？",
-      okText: "继续",
-      cancelText: "取消",
+      title: t('messages:loadExampleConfirm.title'),
+      content: t('messages:loadExampleConfirm.content'),
+      okText: t('common:continue'),
+      cancelText: t('common:cancel'),
     });
     if (!confirmed) return;
 
@@ -63,7 +65,7 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
     updateContestData(() => exampleData);
     await clearDB();
     await saveConfigToDB(exampleData);
-    message.success("示例配置已载入");
+    message.success(t('messages:exampleLoaded'));
   };
 
   const handleImport = () => {
@@ -101,11 +103,11 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
 
         updateContestData(() => contestWithImages);
         await saveConfigToDB(contestWithImages);
-        message.success("配置导入成功");
+        message.success(t('messages:configImportSuccess'));
       } catch (err) {
         (notification as any).open({
           type: "error",
-          message: "导入失败",
+          message: t('messages:importFailed'),
           description: err instanceof Error ? err.message : String(err),
           placement: "bottomRight",
         });
@@ -124,7 +126,7 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
-      const loadingMessage = message.loading("正在解析 Polygon 比赛包...", 0);
+      const loadingMessage = message.loading(t('messages:parsingPolygonPackage'), 0);
       try {
         // Revoke old blob URLs
         for (const img of contestData.images) {
@@ -136,12 +138,12 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
         updateContestData(() => contestWithImages);
         await saveConfigToDB(contestWithImages);
         loadingMessage();
-        message.success("Polygon 比赛包导入成功");
+        message.success(t('messages:polygonImportSuccess'));
       } catch (err) {
         loadingMessage();
         (notification as any).open({
           type: "error",
-          message: "导入失败",
+          message: t('messages:importFailed'),
           description: err instanceof Error ? err.message : String(err),
           placement: "bottomRight",
         });
@@ -160,11 +162,11 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
       a.download = `${contestData.meta.title || "contest"}-config.json`;
       a.click();
       URL.revokeObjectURL(url);
-      message.success("配置导出成功");
+      message.success(t('messages:configExportSuccess'));
     } catch (err) {
       (notification as any).open({
         type: "error",
-        message: "导出失败",
+        message: t('messages:exportFailed'),
         description: err instanceof Error ? err.message : String(err),
         placement: "bottomRight",
       });
@@ -176,7 +178,7 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
     setExportDisabled(true);
     try {
       const pdf = await compileToPdf(contestData);
-      if (!pdf) throw new Error("编译返回空数据");
+      if (!pdf) throw new Error(t('messages:compilationError'));
 
       const blob = new Blob([new Uint8Array(pdf)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
@@ -188,7 +190,7 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
     } catch (err) {
       (notification as any).open({
         type: "error",
-        message: "PDF 导出失败",
+        message: t('messages:pdfExportFailed'),
         description: err instanceof Error ? err.message : String(err),
         placement: "bottomRight",
       });
@@ -208,17 +210,17 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
             trigger={["click"]}
           >
             <Button>
-              载入示例 <FontAwesomeIcon icon={faChevronDown} />
+              {t('common:loadExample')} <FontAwesomeIcon icon={faChevronDown} />
             </Button>
           </Dropdown>
           <Button icon={<FontAwesomeIcon icon={faFolderOpen} />} onClick={handleImportPolygonPackage}>
-            导入 Polygon 比赛包
+            {t('common:importPolygonPackage')}
           </Button>
           <Button icon={<FontAwesomeIcon icon={faFileImport} />} onClick={handleImport}>
-            导入配置
+            {t('common:importConfig')}
           </Button>
           <Button icon={<FontAwesomeIcon icon={faFileExport} />} onClick={handleExport}>
-            导出配置
+            {t('common:exportConfig')}
           </Button>
           <Button
             type="primary"
@@ -226,7 +228,7 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
             disabled={exportDisabled}
             onClick={handleExportPdf}
           >
-            导出 PDF
+            {t('common:exportPdf')}
           </Button>
         </Space>
       </div>
@@ -277,10 +279,15 @@ const ContestEditor: FC = () => {
   );
 
   return (
-    <Suspense fallback={<div className="contest-editor loading">加载中...</div>}>
+    <Suspense fallback={<div className="contest-editor loading"><LoadingFallback /></div>}>
       <ContestEditorWithPromise promise={initialPromise} />
     </Suspense>
   );
+};
+
+const LoadingFallback = () => {
+  const { t } = useTranslation();
+  return <>{t('common:loading')}</>;
 };
 
 export default ContestEditor;

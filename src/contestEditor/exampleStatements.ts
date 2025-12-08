@@ -1,7 +1,118 @@
 import type { Contest } from "@/types/contest";
 
 export const exampleStatements: Record<string, Contest> = {
-  SupportedGrammar: {
+  "English Example": {
+    meta: {
+      title: "XCPC Programming Contest",
+      subtitle: "Problem Set",
+      author: "Chumeng",
+      date: "December 4, 2025",
+      language: "en",
+      enable_titlepage: true,
+      enable_header_footer: true,
+      enable_problem_list: true,
+    },
+    problems: [
+      {
+        problem: {
+          display_name: "Hello, World!",
+          samples: [
+            { input: "World", output: "Hello, World!" },
+            { input: "Typst", output: "Hello, Typst!" }
+          ],
+          format: "latex"
+        },
+        statement: {
+          description: "\\begin{tabular}{ll}\n    Input file: & standard input \\\\\n    Output file: & standard output \\\\\n    Time Limit: & 1 second \\\\\n    Memory Limit: & 512 megabytes \\\\\n\\end{tabular}\n\nGiven a string $S$, output \"Hello, $S$!\"",
+          input: "Input a string $S$.",
+          output: "Output the answer.",
+          notes: "The length of the string does not exceed 100.",
+        },
+      },
+      {
+        problem: {
+          display_name: "A + B",
+          samples: [
+            { input: "1 2", output: "3" },
+            { input: "10 20", output: "30" }
+          ],
+          format: "latex"
+        },
+        statement: {
+          description: "Calculate the value of $A + B$.",
+          input: "Input two integers $A$ and $B$.",
+          output: "Output the value of $A + B$.",
+          notes: "$-10^9 \\leq A, B \\leq 10^9$.",
+        },
+      },
+      {
+        problem: {
+          display_name: "Palindrome Check",
+          samples: [
+            { input: "racecar", output: "Yes" },
+            { input: "hello", output: "No" },
+            { input: "a", output: "Yes" }
+          ],
+          format: "latex"
+        },
+        statement: {
+          description: "Given a string, determine whether it is a palindrome (a string that reads the same forwards and backwards).",
+          input: "Input a string $S$.",
+          output: "Output \\texttt{Yes} if it is a palindrome, otherwise output \\texttt{No}.",
+          notes: "The length of the string does not exceed $10^5$.",
+        },
+      },
+      {
+        problem: {
+          display_name: "Array Sorting",
+          samples: [
+            { input: "5\n3 1 4 2 5", output: "1 2 3 4 5" },
+            { input: "3\n5 5 5", output: "5 5 5" }
+          ],
+          format: "latex"
+        },
+        statement: {
+          description: "Given an array, sort it and output the result.",
+          input: "The first line contains an integer $n$ ($1 \\leq n \\leq 1000$), representing the length of the array.\n\nThe second line contains $n$ integers, representing the array elements.",
+          output: "Output the sorted array, with elements separated by spaces.",
+          notes: "Array elements range from $-10^6$ to $10^6$.",
+        },
+      },
+      {
+        problem: {
+          display_name: "LaTeX Example (Demo)",
+          samples: [
+            { input: "3", output: "6" },
+            { input: "5", output: "120" }
+          ],
+          format: "latex"
+        },
+        statement: {
+          description: "Calculate the factorial of $n$.\n\n\\textbf{Definition:} The factorial of a non-negative integer $n$ is the product of all positive integers less than or equal to $n$.",
+          input: "Input an integer $n$ ($0 \\le n \\le 20$).",
+          output: "Output the value of $n!$.",
+          notes: "Note that $20! = 2,432,902,008,176,640,000$.",
+        },
+      },
+      {
+        problem: {
+          display_name: "Markdown Example (Demo)",
+          samples: [
+            { input: "5", output: "1 4 9 16 25" },
+            { input: "3", output: "1 4 9" }
+          ],
+          format: "markdown"
+        },
+        statement: {
+          description: "For a given integer $n$, output the squares of all integers from $1$ to $n$.\n\n**Example:**\n- When $n = 3$, output `1 4 9`\n- When $n = 5$, output `1 4 9 16 25`\n\n### Formula\n\nThe square of each integer can be calculated using the following formula:\n\n$$x^2 = x \\times x$$\n\nwhere $x$ is an integer from $1$ to $n$.",
+          input: "The first line contains an integer $n$ ($1 \\le n \\le 1000$).",
+          output: "Output $n$ numbers, where the $i$-th number is $i^2$, separated by spaces.",
+          notes: "### Data Range\n- $1 \\le n \\le 1000$\n- Results are within 32-bit integer range\n\n### Hint\nYou can use a loop or directly calculate using the formula.",
+        },
+      },
+    ],
+  },
+  "中文示例": {
     meta: {
       title: "这是一场 XCPC 程序设计竞赛",
       subtitle: "试题册",
