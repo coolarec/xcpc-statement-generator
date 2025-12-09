@@ -5,59 +5,61 @@
 [![GitHub last commit (dev branch)](<https://img.shields.io/github/last-commit/lihaoze123/xcpc-statement-generator/main?label=last%20commit%20(main%20branch)>)](https://github.com/lihaoze123/xcpc-statement-generator/commits/main/)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/lihaoze123/xcpc-statement-generator)
 
-一个基于 Web 的 XCPC 竞赛题目册生成器，支持在浏览器中将 Typst/Markdown/LaTeX 格式的题目转化为专业的 XCPC 风格 PDF 文件。
+**[English](README.md) | [中文(Chinese)](README.cn.md)**
+
+A web-based XCPC contest statement generator that converts Typst/Markdown/LaTeX format problems into professional XCPC-style PDF files directly in your browser.
 
 ![screenshot](assets/screenshot.png)
 
-## ✨ 特性
+## ✨ Features
 
-- **🌐 浏览器原生运行**：无需后端服务器，完全在浏览器中运行
-- **📦 Polygon 包导入**：支持直接导入 Codeforces Polygon 系统导出的比赛包
-- **📝 多格式支持**：支持 Typst、Markdown、LaTeX 三种题面格式
-- **⚡ 实时预览**：即时编译预览，所见即所得
-- **🎨 专业排版**：几乎像素级复刻 XCPC 竞赛的题目册样式
-- **🔧 灵活配置**：支持自定义竞赛信息、题目列表等元数据
+- **🌐 Native Browser Runtime**: No backend server required, runs entirely in your browser
+- **📦 Polygon Package Import**: Direct import support for contest packages exported from Codeforces Polygon system
+- **📝 Multi-format Support**: Supports Typst, Markdown, and LaTeX problem statement formats
+- **⚡ Real-time Preview**: Instant compilation and preview with WYSIWYG editing
+- **🎨 Professional Typesetting**: Almost pixel-perfect replica of XCPC contest statement styles
+- **🔧 Flexible Configuration**: Support for custom contest information, problem lists, and other metadata
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 使用 Polygon 包导入
+### Using Polygon Package Import
 
-1. 在 Codeforces Polygon 系统中导出比赛包（ZIP 格式）
-2. 在应用中点击 **"导入 Polygon 包"** 按钮
-3. 选择下载的 ZIP 文件，等待解析完成
-4. 编辑和完善题目信息，导出 PDF 文件
+1. Export the contest package from the Codeforces Polygon system (ZIP format)
+2. Click the **"Import Polygon Package"** button in the application
+3. Select the downloaded ZIP file and wait for parsing to complete
+4. Edit and refine problem information, then export the PDF file
 
-### 本地开发
+### Local Development
 
 ```bash
-# 克隆项目
+# Clone the repository
 git clone https://github.com/lihaoze123/xcpc-statement-generator.git
 cd xcpc-statement-generator
 
-# 在 vite.config.ts 中配置 base 项为 ./
+# Configure the base item as ./ in vite.config.ts
 
-# 安装依赖
+# Install dependencies
 npm install
 
-# 启动开发服务器
+# Start development server
 npm run dev
 
-# 构建生产版本
+# Build for production
 npm run build
 
-# 预览生产构建
+# Preview production build
 npm run preview
 ```
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-## 📄 许可证
+## 📄 License
 
-本项目采用 AGPL 3.0 许可证，详见 [LICENSE](LICENSE) 文件。
+This project is licensed under AGPL 3.0. See the [LICENSE](LICENSE) file for details.
 
-## 🙏 致谢
+## 🙏 Acknowledgments
 
-- 灵感来源于 [cnoi-statement-generator](https://github.com/Mr-Python-in-China/cnoi-statement-generator) （部分代码有参考）
-- 感谢 Typst 社区提供的优秀编译器
+- Inspired by [cnoi-statement-generator](https://github.com/Mr-Python-in-China/cnoi-statement-generator) (some code referenced)
+- Thanks to the Typst community for providing the excellent compiler
