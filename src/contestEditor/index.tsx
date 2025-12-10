@@ -61,7 +61,16 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
       URL.revokeObjectURL(img.url);
     }
 
-    const exampleData: ContestWithImages = { ...exampleStatements[key], images: [] };
+    const problemsWithKeys = exampleStatements[key].problems.map((problem) => ({
+      ...problem,
+      key: problem.key || crypto.randomUUID(),
+    }));
+
+    const exampleData: ContestWithImages = {
+      ...exampleStatements[key],
+      problems: problemsWithKeys,
+      images: []
+    };
     updateContestData(() => exampleData);
     await clearDB();
     await saveConfigToDB(exampleData);
@@ -95,9 +104,14 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
           }
         }
 
+        const problemsWithKeys = data.problems.map((problem) => ({
+          ...problem,
+          key: problem.key || crypto.randomUUID(),
+        }));
+
         const contestWithImages: ContestWithImages = {
           meta: data.meta,
-          problems: data.problems,
+          problems: problemsWithKeys,
           images: imageList,
         };
 
@@ -134,7 +148,17 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
         }
 
         const data = await loadPolygonPackage([file]);
-        const contestWithImages: ContestWithImages = { ...data, images: [] };
+
+        const problemsWithKeys = data.problems.map((problem) => ({
+          ...problem,
+          key: problem.key || crypto.randomUUID(),
+        }));
+
+        const contestWithImages: ContestWithImages = {
+          ...data,
+          problems: problemsWithKeys,
+          images: []
+        };
         updateContestData(() => contestWithImages);
         await saveConfigToDB(contestWithImages);
         loadingMessage();
@@ -255,7 +279,15 @@ const ContestEditor: FC = () => {
     loadConfigFromDB()
       .then((stored) => {
         if (!stored) {
-          return { ...exampleStatements["English Example"], images: [] } as ContestWithImages;
+          const problemsWithKeys = exampleStatements["English Example"].problems.map((problem) => ({
+            ...problem,
+            key: problem.key || crypto.randomUUID(),
+          }));
+          return {
+            ...exampleStatements["English Example"],
+            problems: problemsWithKeys,
+            images: []
+          } as ContestWithImages;
         }
 
         // Create blob URLs for loaded images
@@ -268,13 +300,28 @@ const ContestEditor: FC = () => {
           }
         }
 
+        const problemsWithKeys = stored.data.problems.map((problem) => ({
+          ...problem,
+          key: problem.key || crypto.randomUUID(),
+        }));
+
         return {
           meta: stored.data.meta,
-          problems: stored.data.problems,
+          problems: problemsWithKeys,
           images: imageList,
         } as ContestWithImages;
       })
-      .catch(() => ({ ...exampleStatements["English Example"], images: [] } as ContestWithImages)),
+      .catch(() => {
+        const problemsWithKeys = exampleStatements["English Example"].problems.map((problem) => ({
+          ...problem,
+          key: problem.key || crypto.randomUUID(),
+        }));
+        return {
+          ...exampleStatements["English Example"],
+          problems: problemsWithKeys,
+          images: []
+        } as ContestWithImages;
+      }),
     []
   );
 
