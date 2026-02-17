@@ -47,6 +47,22 @@
     background-color: #F5F7FA;
   }
 
+  /* Make all content unselectable by default */
+  * {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Allow selection in text inputs, textareas, selects, and contenteditable elements */
+  input,
+  textarea,
+  select,
+  [contenteditable="true"],
+  [contenteditable="true"] * {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
   /* Custom scrollbar for selected containers */
   .custom-scroll {
     scrollbar-width: thin;

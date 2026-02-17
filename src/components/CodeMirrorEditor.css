@@ -4,6 +4,8 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .codemirror-container .cm-editor {
