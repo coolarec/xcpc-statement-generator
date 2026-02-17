@@ -17,19 +17,14 @@ const App: FC = () => {
             <ContestEditor />
           </main>
           <footer>
-            <div>
-              <a
-                href="https://github.com/lihaoze123/xcpc-statement-generator"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <FontAwesomeIcon icon={faGithub} className="mr-1" />
-                {appName}
-              </a>
-              <span className="ml-2">v{appVersion}</span>
-              <span className="ml-1">({GIT_COMMIT_INFO})</span>
-            </div>
-            <div>Developed by chumeng with ❤️</div>
+            <a
+              href="https://github.com/lihaoze123/xcpc-statement-generator"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FontAwesomeIcon icon={faGithub} className="mr-1" />
+              {appName} v{appVersion} ({GIT_COMMIT_INFO}) · Developed by chumeng with ❤️
+            </a>
           </footer>
         </div>
       </TypstInitStatusProvider>
