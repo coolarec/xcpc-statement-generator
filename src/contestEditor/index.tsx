@@ -1,23 +1,15 @@
 import { type FC, useEffect, useState, useMemo, Suspense, use, useRef, useCallback } from "react";
 import { useImmer } from "use-immer";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faFileArrowDown,
-  faFileImport,
-  faFileExport,
-  faChevronDown,
-  faChevronLeft,
-  faChevronRight,
-  faFolderOpen,
-  faExpand,
-  faCompress,
-  faMagnifyingGlassPlus,
-  faMagnifyingGlassMinus
-} from "@fortawesome/free-solid-svg-icons";
 import { debounce } from "lodash";
 import { useTranslation } from "react-i18next";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFileCode, faLanguage, faUpload, faFileZipper, faX, faImages, faChevronDown, faArrowsDownToLine } from "@fortawesome/free-solid-svg-icons";
 
 import type { ContestWithImages, ImageData } from "@/types/contest";
 import { exampleStatements } from "./exampleStatements";
@@ -25,67 +17,62 @@ import { compileToPdf, typstInitPromise, registerImages } from "@/compiler";
 import { saveConfigToDB, loadConfigFromDB, exportConfig, importConfig, clearDB, saveImageToDB } from "@/utils/indexedDBUtils";
 import { loadPolygonPackage } from "@/utils/polygonConverter";
 import { useToast } from "@/components/ToastProvider";
-import ConfigPanel from "./ConfigPanel";
-import Preview, { type PreviewHandle, type PreviewPageInfo } from "./Preview";
+import { type PreviewHandle } from "./Preview";
+
+import Sidebar from "./Sidebar";
+import EditorArea from "./EditorArea";
+import PreviewArea from "./PreviewArea";
 
 import "./index.css";
 
+const SortableReorderItem: FC<{ problem: ContestWithImages['problems'][0]; index: number }> = ({ problem, index }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: problem.key! });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-grab active:cursor-grabbing"
+    >
+      <span className="w-6 h-6 flex items-center justify-center bg-white rounded border text-sm font-medium">
+        {String.fromCharCode(65 + index)}
+      </span>
+      <span className="flex-1 truncate">{problem.problem.display_name}</span>
+    </div>
+  );
+};
+
 const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData }) => {
   const [contestData, updateContestData] = useImmer<ContestWithImages>(initialData);
+  const [activeId, setActiveId] = useState<string>('config');
   const [exportDisabled, setExportDisabled] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showReorder, setShowReorder] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [confirmModalContent, setConfirmModalContent] = useState({ title: '', content: '' });
   const [previewFullscreen, setPreviewFullscreen] = useState(false);
-  const [previewZoom, setPreviewZoom] = useState(100);
-  const [previewPageInfo, setPreviewPageInfo] = useState<PreviewPageInfo>({ currentPage: 1, totalPages: 1 });
-  const [previewPageInput, setPreviewPageInput] = useState("1");
-  const [isPageInputFocused, setIsPageInputFocused] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(true);
+  const [vimMode, setVimMode] = useState(() => {
+    const saved = localStorage.getItem("vimMode");
+    return saved ? saved === "true" : false;
+  });
   const previewRef = useRef<PreviewHandle>(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showToast } = useToast();
-  const totalPages = Math.max(1, previewPageInfo.totalPages);
 
-  const handlePreviewPageInfoChange = useCallback((info: PreviewPageInfo) => {
-    setPreviewPageInfo((prev) => {
-      if (prev.currentPage === info.currentPage && prev.totalPages === info.totalPages) {
-        return prev;
-      }
-      return info;
-    });
-    if (!isPageInputFocused) {
-      setPreviewPageInput(String(info.currentPage));
-    }
-  }, [isPageInputFocused]);
-
-  const handleJumpToPage = useCallback(() => {
-    const parsed = Number(previewPageInput);
-    const total = Math.max(1, previewPageInfo.totalPages);
-    const current = Math.max(1, previewPageInfo.currentPage);
-
-    if (!Number.isFinite(parsed)) {
-      setPreviewPageInput(String(current));
-      return;
-    }
-
-    const target = Math.min(total, Math.max(1, Math.trunc(parsed)));
-    setPreviewPageInput(String(target));
-    previewRef.current?.jumpToPage(target);
-  }, [previewPageInfo.currentPage, previewPageInfo.totalPages, previewPageInput]);
-
-  const handlePrevPage = useCallback(() => {
-    if (previewPageInfo.currentPage <= 1) return;
-    const target = previewPageInfo.currentPage - 1;
-    setPreviewPageInput(String(target));
-    previewRef.current?.jumpToPage(target);
-  }, [previewPageInfo.currentPage]);
-
-  const handleNextPage = useCallback(() => {
-    if (previewPageInfo.currentPage >= totalPages) return;
-    const target = previewPageInfo.currentPage + 1;
-    setPreviewPageInput(String(target));
-    previewRef.current?.jumpToPage(target);
-  }, [previewPageInfo.currentPage, totalPages]);
+  // DND sensors - prevent accidental drags
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   // Debounced auto-save
   const debouncedSave = useMemo(() =>
@@ -111,6 +98,58 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
     typstInitPromise.then(() => { if (mounted) setExportDisabled(false); });
     return () => { mounted = false; };
   }, []);
+
+  // Toggle language
+  const toggleLanguage = useCallback(() => {
+    const newLang = i18n.language === "zh" ? "en" : "zh";
+    i18n.changeLanguage(newLang);
+    localStorage.setItem("language", newLang);
+  }, [i18n]);
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = contestData.problems.findIndex((p) => p.key === active.id);
+    const newIndex = contestData.problems.findIndex((p) => p.key === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      updateContestData((draft) => {
+        draft.problems = arrayMove(draft.problems, oldIndex, newIndex);
+      });
+    }
+  };
+
+  // Handle add problem
+  const handleAddProblem = useCallback(() => {
+    const newKey = crypto.randomUUID();
+    updateContestData((draft) => {
+      draft.problems.push({
+        key: newKey,
+        problem: { display_name: "New Problem", samples: [{ input: "", output: "" }] },
+        statement: { description: "", input: "", output: "", notes: "" },
+      });
+    });
+    setActiveId(newKey);
+  }, []);
+
+  // Handle delete problem
+  const handleDeleteProblem = useCallback((key: string) => {
+    setConfirmModalContent({
+      title: t('messages:deleteProblemConfirm.title'),
+      content: t('messages:deleteProblemConfirm.content'),
+    });
+
+    setPendingAction(() => {
+      updateContestData((draft) => {
+        const idx = draft.problems.findIndex((p) => p.key === key);
+        if (idx !== -1) draft.problems.splice(idx, 1);
+      });
+      if (activeId === key) setActiveId('config');
+    });
+    setShowConfirmModal(true);
+  }, [activeId, t]);
 
   const handleLoadExample = async (key: string) => {
     setConfirmModalContent({
@@ -201,7 +240,6 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".zip";
-    // @ts-ignore - webkitdirectory is not in the type definition
     input.webkitdirectory = false;
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
@@ -271,178 +309,204 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
     setExportDisabled(false);
   };
 
+  const previewData = useMemo<ContestWithImages>(() => {
+    const problemIndex = contestData.problems.findIndex((p) => p.key === activeId);
+    if (problemIndex === -1) return contestData;
+
+    const selectedProblem = contestData.problems[problemIndex];
+    return {
+      ...contestData,
+      meta: {
+        ...contestData.meta,
+        enable_titlepage: false,
+        enable_problem_list: false,
+        enable_header_footer: false,
+      },
+      problems: [{ ...selectedProblem }],
+    };
+  }, [contestData, activeId]);
+
   return (
-    <div className="contest-editor flex flex-col h-full">
-      {/* Top Toolbar */}
-      <div className="editor-toolbar">
-        <div className="editor-toolbar-left custom-scroll">
-          {/* Group A: Config/Data */}
-          <div className="dropdown">
-            <button tabIndex={0} className="btn-ghost whitespace-nowrap toolbar-action-btn">
-              <span className="toolbar-btn-label">{t('common:loadExample')}</span>
-              <FontAwesomeIcon icon={faChevronDown} className="ml-1 text-[10px]" />
-            </button>
-            <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-white rounded-lg w-52 border border-gray-200">
-              {Object.keys(exampleStatements).map((k) => (
-                <li key={k}><a onClick={() => handleLoadExample(k)} className="text-sm">{k}</a></li>
-              ))}
-            </ul>
-          </div>
-          <button className="btn-ghost whitespace-nowrap toolbar-action-btn" onClick={handleImportPolygonPackage}>
-            <FontAwesomeIcon icon={faFolderOpen} className="mr-1.5 text-sm" />
-            <span className="toolbar-btn-label toolbar-btn-label-optional">{t('common:importPolygonPackage')}</span>
-          </button>
-          <button className="btn-ghost whitespace-nowrap toolbar-action-btn" onClick={handleImport}>
-            <FontAwesomeIcon icon={faFileImport} className="mr-1.5 text-sm" />
-            <span className="toolbar-btn-label toolbar-btn-label-optional">{t('common:importConfig')}</span>
-          </button>
-          <button className="btn-ghost whitespace-nowrap toolbar-action-btn" onClick={handleExport}>
-            <FontAwesomeIcon icon={faFileExport} className="mr-1.5 text-sm" />
-            <span className="toolbar-btn-label toolbar-btn-label-optional">{t('common:exportConfig')}</span>
-          </button>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
+      <div className="flex h-full w-full bg-white overflow-hidden">
+        {/* Left Sidebar */}
+        <div className="w-12 flex-shrink-0 border-r border-gray-200 bg-white z-10">
+          <Sidebar
+            contestData={contestData}
+            activeId={activeId}
+            setActiveId={setActiveId}
+            onAddProblem={handleAddProblem}
+            onDeleteProblem={handleDeleteProblem}
+            onExportPdf={handleExportPdf}
+            exportDisabled={exportDisabled}
+            onOpenSettings={() => setShowSettings(true)}
+            onOpenImages={() => setActiveId('images')}
+            previewVisible={previewVisible}
+            onTogglePreview={() => setPreviewVisible(!previewVisible)}
+          />
         </div>
 
-        {/* Group B: View/Main Action */}
-        <div className="editor-toolbar-right">
-          {previewFullscreen && (
-            <div className="toolbar-pill">
-              <button
-                className="toolbar-icon-btn"
-                onClick={() => setPreviewZoom(Math.max(50, previewZoom - 10))}
-                title="Zoom Out"
-                aria-label="Zoom Out"
-              >
-                <FontAwesomeIcon icon={faMagnifyingGlassMinus} className="text-sm" />
-              </button>
-              <span className="toolbar-zoom-value">{previewZoom}%</span>
-              <button
-                className="toolbar-icon-btn"
-                onClick={() => setPreviewZoom(Math.min(200, previewZoom + 10))}
-                title="Zoom In"
-                aria-label="Zoom In"
-              >
-                <FontAwesomeIcon icon={faMagnifyingGlassPlus} className="text-sm" />
-              </button>
-            </div>
-          )}
-
-          <button
-            className="btn-ghost whitespace-nowrap toolbar-fullscreen-btn toolbar-action-btn"
-            onClick={() => setPreviewFullscreen(!previewFullscreen)}
-            title={previewFullscreen ? t('common:exitFullscreen') : t('common:fullscreen')}
-          >
-            <FontAwesomeIcon icon={previewFullscreen ? faCompress : faExpand} className="mr-1.5 text-sm" />
-            <span className="toolbar-fullscreen-label">
-              {previewFullscreen ? t('common:exitFullscreen') : t('common:fullscreen')}
-            </span>
-          </button>
-
-          <div className="toolbar-pager" role="group" aria-label={t('common:page')}>
-            <button
-              className="toolbar-pager-btn"
-              onClick={handlePrevPage}
-              disabled={previewPageInfo.currentPage <= 1}
-              title="Previous Page"
-              aria-label="Previous Page"
-            >
-              <FontAwesomeIcon icon={faChevronLeft} className="text-[11px]" />
-            </button>
-            <div className="toolbar-pager-center">
-              <input
-                type="number"
-                min={1}
-                max={totalPages}
-                className="toolbar-page-current-input"
-                value={previewPageInput}
-                onChange={(e) => setPreviewPageInput(e.target.value)}
-                onFocus={() => setIsPageInputFocused(true)}
-                onBlur={() => {
-                  setIsPageInputFocused(false);
-                  if (previewPageInput.trim() === "") {
-                    setPreviewPageInput(String(previewPageInfo.currentPage));
-                    return;
-                  }
-                  handleJumpToPage();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleJumpToPage();
-                    (e.currentTarget as HTMLInputElement).blur();
-                  }
-                }}
-                aria-label={t('common:goToPage')}
+        {/* Main Content: Editor + Preview */}
+        <div className="flex-1 h-full min-w-0">
+          <Allotment>
+            {/* Editor Area */}
+            <Allotment.Pane minSize={350} preferredSize="40%">
+              <EditorArea
+                contestData={contestData}
+                updateContestData={updateContestData}
+                activeId={activeId}
+                onDeleteProblem={handleDeleteProblem}
+                vimMode={vimMode}
               />
-              <span className="toolbar-page-separator">/</span>
-              <span className="toolbar-page-total">{totalPages}</span>
-            </div>
-            <button
-              className="toolbar-pager-btn"
-              onClick={handleNextPage}
-              disabled={previewPageInfo.currentPage >= totalPages}
-              title="Next Page"
-              aria-label="Next Page"
-            >
-              <FontAwesomeIcon icon={faChevronRight} className="text-[11px]" />
-            </button>
-          </div>
+            </Allotment.Pane>
 
-          <div className="toolbar-section-divider" aria-hidden="true"></div>
-
-          <button
-            className="btn-primary toolbar-primary-btn shadow-sm"
-            onClick={handleExportPdf}
-            disabled={exportDisabled}
-          >
-            <FontAwesomeIcon icon={faFileArrowDown} className="mr-1.5 text-sm" />
-            <span className="toolbar-primary-label">{t('common:exportPdf')}</span>
-          </button>
+            {/* Preview Area */}
+            {previewVisible && (
+              <Allotment.Pane minSize={400}>
+                <PreviewArea
+                  data={previewData}
+                  previewRef={previewRef}
+                  isFullscreen={previewFullscreen}
+                  setFullscreen={setPreviewFullscreen}
+                />
+              </Allotment.Pane>
+            )}
+          </Allotment>
         </div>
-      </div>
 
-      {/* Main Content */}
-      {previewFullscreen ? (
-        <div className="flex-1 custom-scroll overflow-y-auto" style={{ backgroundColor: '#F3F4F6', padding: '24px' }}>
-          <div className="a4-paper min-h-[297mm] p-8 transition-transform duration-200" style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: 'top center' }}>
-            <Preview ref={previewRef} data={contestData} onPageInfoChange={handlePreviewPageInfoChange} />
-          </div>
-        </div>
-      ) : (
-        <Allotment className="flex-1">
-          <Allotment.Pane minSize={300}>
-            <div className="custom-scroll h-full overflow-y-auto p-4 border-r border-gray-200 bg-white">
-              <ConfigPanel contestData={contestData} updateContestData={updateContestData} />
-            </div>
-          </Allotment.Pane>
-          <Allotment.Pane>
-            <div className="custom-scroll h-full overflow-y-auto" style={{ backgroundColor: '#F3F4F6', padding: '24px' }}>
-              <div className="a4-paper min-h-[297mm] p-8 transition-transform duration-200" style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: 'top center' }}>
-                <Preview ref={previewRef} data={contestData} onPageInfoChange={handlePreviewPageInfoChange} />
+        {/* Custom Modal */}
+        {showConfirmModal && (
+          <div className="modal modal-open">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">{confirmModalContent.title}</h3>
+              <p className="py-4">{confirmModalContent.content}</p>
+              <div className="modal-action">
+                <button className="btn btn-ghost" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
+                  {t('common:cancel')}
+                </button>
+                <button className="btn btn-primary" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
+                  {t('common:continue')}
+                </button>
               </div>
             </div>
-          </Allotment.Pane>
-        </Allotment>
-      )}
-
-      {/* Custom Modal */}
-      {showConfirmModal && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg">{confirmModalContent.title}</h3>
-            <p className="py-4">{confirmModalContent.content}</p>
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
-                {t('common:cancel')}
-              </button>
-              <button className="btn btn-primary" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
-                {t('common:continue')}
-              </button>
-            </div>
+            <div className="modal-backdrop" onClick={() => setShowConfirmModal(false)}></div>
           </div>
-          <div className="modal-backdrop" onClick={() => setShowConfirmModal(false)}></div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {/* Settings Modal */}
+        {showSettings && (
+          <div className="modal modal-open">
+            <div className="modal-box max-w-md">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-xl">{t('common:settings')}</h3>
+                <button className="btn btn-sm btn-ghost" onClick={() => setShowSettings(false)}>
+                  <FontAwesomeIcon icon={faX} />
+                </button>
+              </div>
+              <div className="flex flex-col gap-4">
+                {/* Language Toggle */}
+                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); toggleLanguage(); }}>
+                  <FontAwesomeIcon icon={faLanguage} className="text-xl w-6" />
+                  <span className="text-base">{i18n.language === "zh" ? "切换到英文" : "Switch to 中文"}</span>
+                </button>
+
+                {/* Vim Mode Toggle */}
+                <button
+                  className={`btn btn-outline btn-lg justify-start gap-4 h-14 ${vimMode ? 'border-[#1D71B7] text-[#1D71B7]' : ''}`}
+                  onClick={() => {
+                    const newValue = !vimMode;
+                    setVimMode(newValue);
+                    localStorage.setItem("vimMode", String(newValue));
+                  }}
+                >
+                  <span className="text-base">{vimMode ? 'Vim 模式 (已开启)' : 'Vim 模式'}</span>
+                </button>
+
+                {/* Image Management */}
+                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); setActiveId('images'); }}>
+                  <FontAwesomeIcon icon={faImages} className="text-xl w-6" />
+                  <span className="text-base">{t('editor:imageManagement')}</span>
+                </button>
+
+                {/* Reorder Problems */}
+                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => setShowReorder(true)}>
+                  <FontAwesomeIcon icon={faArrowsDownToLine} className="text-xl w-6" />
+                  <span className="text-base">重排题目</span>
+                </button>
+
+                {/* Load Example - Dropdown */}
+                <div className="dropdown dropdown-bottom w-full">
+                  <label tabIndex={0} className="btn btn-outline btn-lg justify-start gap-4 h-14 w-full">
+                    <FontAwesomeIcon icon={faChevronDown} className="text-xl w-6" />
+                    <span className="text-base">{t('common:loadExample')}</span>
+                  </label>
+                  <ul tabIndex={0} className="dropdown-content menu p-2 shadow-xl bg-base-100 rounded-box w-full border border-base-300 mt-2">
+                    {Object.keys(exampleStatements).map((key) => (
+                      <li key={key}>
+                        <a onClick={() => { setShowSettings(false); handleLoadExample(key); }} className="text-base">
+                          {key}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="divider my-1">导入 / 导出</div>
+
+                {/* Import Polygon */}
+                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleImportPolygonPackage(); }}>
+                  <FontAwesomeIcon icon={faFileZipper} className="text-xl w-6" />
+                  <span className="text-base">{t('common:importPolygonPackage')}</span>
+                </button>
+
+                {/* Import Config */}
+                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleImport(); }}>
+                  <FontAwesomeIcon icon={faUpload} className="text-xl w-6" />
+                  <span className="text-base">{t('common:importConfig')}</span>
+                </button>
+
+                {/* Export Config */}
+                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleExport(); }}>
+                  <FontAwesomeIcon icon={faFileCode} className="text-xl w-6" />
+                  <span className="text-base">{t('common:exportConfig')}</span>
+                </button>
+              </div>
+            </div>
+            <div className="modal-backdrop" onClick={() => setShowSettings(false)}></div>
+          </div>
+        )}
+
+        {/* Reorder Modal */}
+        {showReorder && (
+          <div className="modal modal-open">
+            <div className="modal-box max-w-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-xl">重排题目</h3>
+                <button className="btn btn-sm btn-ghost" onClick={() => setShowReorder(false)}>
+                  <FontAwesomeIcon icon={faX} />
+                </button>
+              </div>
+              <SortableContext
+                items={contestData.problems.map((p) => p.key!)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto select-none">
+                  {contestData.problems.map((problem, index) => (
+                    <SortableReorderItem
+                      key={problem.key}
+                      problem={problem}
+                      index={index}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+              <p className="text-sm text-gray-500 mt-4 text-center">拖拽题目以重新排序</p>
+            </div>
+            <div className="modal-backdrop" onClick={() => setShowReorder(false)}></div>
+          </div>
+        )}
+      </div>
+    </DndContext>
   );
 };
 
