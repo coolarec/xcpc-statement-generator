@@ -11,21 +11,6 @@
   color: #666;
 }
 
-.contest-editor .toolbar {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
-}
-
-.contest-editor .editor-body {
-  flex: 1;
-  min-height: 0;
-}
-
-.contest-editor .editor-body .ant-splitter-panel {
-  overflow-y: auto;
-}
-
 .config-panel {
   padding: 16px;
 }
@@ -34,7 +19,7 @@
   width: 100%;
   height: 100%;
   position: relative;
-  background: #f5f5f5;
+  background: var(--color-base-200, #F5EFE9);
 }
 
 .preview-container {
@@ -48,11 +33,219 @@
   background: white;
 }
 
-/* Image upload section styles */
-.image-upload-section .ant-upload-drag {
-  padding: 16px;
+/* Toolbar layout and compact controls */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
 }
 
+.editor-toolbar-left {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.editor-toolbar-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-action-btn {
+  height: 30px;
+  padding: 0 10px;
+}
+
+.toolbar-btn-label {
+  line-height: 1;
+  font-size: 12px;
+}
+
+.toolbar-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 2px 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.toolbar-icon-btn {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toolbar-icon-btn:hover {
+  background: #eef2f7;
+  color: #111827;
+}
+
+.toolbar-zoom-value {
+  min-width: 36px;
+  text-align: center;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.toolbar-section-divider {
+  width: 1px;
+  height: 18px;
+  background: #e5e7eb;
+  margin: 0 2px;
+}
+
+.toolbar-pager {
+  display: inline-flex;
+  align-items: stretch;
+  height: 30px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.toolbar-pager-btn {
+  width: 30px;
+  border: 0;
+  background: #fff;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toolbar-pager-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.toolbar-pager-btn:disabled {
+  color: #c7ccd4;
+  background: #fafafa;
+  cursor: not-allowed;
+}
+
+.toolbar-pager-center {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+}
+
+.toolbar-page-current-input {
+  width: 24px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  color: #374151;
+  text-align: center;
+  line-height: 1;
+  padding: 0;
+}
+
+.toolbar-page-current-input:focus {
+  outline: none;
+  color: #1d71b7;
+}
+
+.toolbar-page-separator {
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1;
+}
+
+.toolbar-page-total {
+  min-width: 14px;
+  text-align: left;
+  font-size: 12px;
+  color: #4b5563;
+  line-height: 1;
+}
+
+.toolbar-primary-btn {
+  height: 30px;
+  padding: 0 12px;
+}
+
+.toolbar-primary-label {
+  font-size: 12px;
+  line-height: 1;
+}
+
+@media (max-width: 1180px) {
+  .toolbar-btn-label-optional {
+    display: none;
+  }
+
+  .toolbar-fullscreen-label {
+    display: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .toolbar-primary-label {
+    display: none;
+  }
+
+  .toolbar-primary-btn {
+    width: 34px;
+    min-width: 34px;
+    padding: 0;
+  }
+
+  .toolbar-primary-btn .mr-1\.5 {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .editor-toolbar {
+    padding: 8px 8px;
+  }
+
+  .toolbar-section-divider {
+    display: none;
+  }
+
+  .toolbar-pager-btn {
+    width: 28px;
+  }
+
+  .toolbar-pager-center {
+    padding: 0 6px;
+  }
+
+  .toolbar-page-current-input {
+    width: 22px;
+  }
+}
+
+/* Image upload section styles */
 .upload-dragger-content {
   display: flex;
   flex-direction: column;
@@ -68,10 +261,10 @@
 }
 
 .image-item {
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--color-base-border, #EBE5DD);
   border-radius: 4px;
   overflow: hidden;
-  background: #fafafa;
+  background: var(--color-base-200, #F5EFE9);
 }
 
 .image-thumbnail-container {
@@ -80,18 +273,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: var(--color-base-300, #EBE5DD);
   background-image:
-    linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
-    linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
-    linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+    linear-gradient(45deg, #d0d0d0 25%, transparent 25%),
+    linear-gradient(-45deg, #d0d0d0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d0d0d0 75%),
+    linear-gradient(-45deg, transparent 75%, #d0d0d0 75%);
   background-size: 10px 10px;
-  background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+  background-position: 0 0, 0 5px -5px, -5px 0px;
 }
 
 .image-thumbnail {
-  max-width: 100%;
+  max-width:, 5px 100%;
   max-height: 80px;
   object-fit: contain;
   display: block;
@@ -117,4 +310,116 @@
 .image-actions .ant-btn {
   padding: 2px 6px;
   height: auto;
+}
+
+/* ========== 极简留白风 UI/UX 改进样式 ========== */
+
+/* Problem item - 极简设计 */
+.problem-item {
+  transition: all 0.2s ease;
+  border: 1px solid #F1F5F9;
+  border-radius: 8px;
+}
+
+.problem-item-expanded .problem-item-header {
+  background-color: #FAFBFC;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+/* Editor 容器 - 无边框设计 */
+.editor-container {
+  border: none;
+  border-radius: 6px;
+  background: #FFFFFF;
+  overflow: hidden;
+  transition: all 0.15s ease;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.editor-container:focus-within {
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
+}
+
+/* Editor 容器 - 等宽字体版本 */
+.editor-container-mono {
+  background: #F8FAFC;
+}
+
+.editor-container-mono:focus-within {
+  background: #FFFFFF;
+}
+
+/* 表单标签样式优化 */
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748B;
+  margin-bottom: 8px;
+}
+
+/* 样例区域 - 极简设计 */
+.sample-item {
+  background: transparent;
+  border: none;
+  border-top: 1px solid #F1F5F9;
+  padding: 12px 0;
+}
+
+.sample-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sample-number {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.sample-delete-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sample-item:hover .sample-delete-btn {
+  opacity: 0.5;
+}
+
+.sample-delete-btn:hover {
+  opacity: 1 !important;
+}
+
+.sample-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sample-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.sample-field-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94A3B8;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* 问题内容区域 */
+.problem-item-content {
+  padding: 16px;
+}
+
+/* 移动端响应式 */
+@media (max-width: 640px) {
+  .sample-grid {
+    grid-template-columns: 1fr;
+  }
 }
