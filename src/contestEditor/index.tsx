@@ -22,6 +22,9 @@ import { type PreviewHandle } from "./Preview";
 import Sidebar from "./Sidebar";
 import EditorArea from "./EditorArea";
 import PreviewArea from "./PreviewArea";
+import MobileToolbar from "./MobileToolbar";
+import MobileTabBar from "./MobileTabBar";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import "./index.css";
 
@@ -66,6 +69,10 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
     return saved ? saved === "true" : false;
   });
   const previewRef = useRef<PreviewHandle>(null);
+
+  // Responsive layout
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
 
@@ -328,27 +335,245 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
-      <div className="flex h-full w-full bg-white overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-12 flex-shrink-0 border-r border-gray-200 bg-white z-10">
-          <Sidebar
+      {isDesktop ? (
+        <div className="flex h-full w-full bg-white overflow-hidden">
+          {/* Left Sidebar */}
+          <div className="w-12 flex-shrink-0 border-r border-gray-200 bg-white z-10">
+            <Sidebar
+              contestData={contestData}
+              activeId={activeId}
+              setActiveId={setActiveId}
+              onAddProblem={handleAddProblem}
+              onDeleteProblem={handleDeleteProblem}
+              onExportPdf={handleExportPdf}
+              onExportProblem={(key) => {
+                const problem = contestData.problems.find(p => p.key === key);
+                if (!problem) return;
+
+                compileProblemToPdf(contestData, key)
+                  .then(pdf => {
+                    const blob = new Blob([new Uint8Array(pdf)], { type: "application/pdf" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    const index = contestData.problems.findIndex(p => p.key === key);
+                    const letter = String.fromCharCode(65 + index);
+                    a.download = `${contestData.meta.title || "contest"}-${letter}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    showToast(t('editor:exportSuccess'), 'success');
+                  })
+                  .catch(err => {
+                    showToast(t('editor:exportFailed') + ': ' + (err instanceof Error ? err.message : String(err)), 'error');
+                  });
+              }}
+              exportDisabled={exportDisabled}
+              onOpenSettings={() => setShowSettings(true)}
+              onOpenImages={() => setActiveId('images')}
+              previewVisible={previewVisible}
+              onTogglePreview={() => setPreviewVisible(!previewVisible)}
+            />
+          </div>
+
+          {/* Main Content: Editor + Preview */}
+          <div className="flex-1 h-full min-w-0">
+            <Allotment>
+              {/* Editor Area */}
+              <Allotment.Pane minSize={350} preferredSize="40%">
+                <EditorArea
+                  contestData={contestData}
+                  updateContestData={updateContestData}
+                  activeId={activeId}
+                  onDeleteProblem={handleDeleteProblem}
+                  onExportCurrentProblem={() => {
+                    if (!activeId || activeId === 'config' || activeId === 'images') return;
+
+                    compileProblemToPdf(contestData, activeId)
+                      .then(pdf => {
+                        const blob = new Blob([new Uint8Array(pdf)], { type: "application/pdf" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        const index = contestData.problems.findIndex(p => p.key === activeId);
+                        const letter = String.fromCharCode(65 + index);
+                        a.download = `${contestData.meta.title || "contest"}-${letter}.pdf`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        showToast(t('editor:exportSuccess'), 'success');
+                      })
+                      .catch(err => {
+                        showToast(t('editor:exportFailed') + ': ' + (err instanceof Error ? err.message : String(err)), 'error');
+                      });
+                  }}
+                  vimMode={vimMode}
+                />
+              </Allotment.Pane>
+
+              {/* Preview Area */}
+              {previewVisible && (
+                <Allotment.Pane minSize={400}>
+                  <PreviewArea
+                    data={previewData}
+                    previewRef={previewRef}
+                    isFullscreen={previewFullscreen}
+                    setFullscreen={setPreviewFullscreen}
+                  />
+                </Allotment.Pane>
+              )}
+            </Allotment>
+          </div>
+
+          {/* Custom Modal */}
+          {showConfirmModal && (
+            <div className="modal modal-open">
+              <div className="modal-box">
+                <h3 className="font-bold text-lg">{confirmModalContent.title}</h3>
+                <p className="py-4">{confirmModalContent.content}</p>
+                <div className="modal-action">
+                  <button className="btn btn-ghost" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
+                    {t('common:cancel')}
+                  </button>
+                  <button className="btn btn-primary" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
+                    {t('common:continue')}
+                  </button>
+                </div>
+              </div>
+              <div className="modal-backdrop" onClick={() => setShowConfirmModal(false)}></div>
+            </div>
+          )}
+
+          {/* Settings Modal */}
+          {showSettings && (
+            <div className="modal modal-open">
+              <div className="modal-box max-w-md">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-xl">{t('common:settings')}</h3>
+                  <button className="btn btn-sm btn-ghost" onClick={() => setShowSettings(false)}>
+                    <FontAwesomeIcon icon={faX} />
+                  </button>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {/* Language Toggle */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); toggleLanguage(); }}>
+                    <FontAwesomeIcon icon={faLanguage} className="text-xl w-6" />
+                    <span className="text-base">{i18n.language === "zh" ? "切换到英文" : "Switch to 中文"}</span>
+                  </button>
+
+                  {/* Vim Mode Toggle */}
+                  <button
+                    className={`btn btn-outline btn-lg justify-start gap-4 h-14 ${vimMode ? 'border-[#1D71B7] text-[#1D71B7]' : ''}`}
+                    onClick={() => {
+                      const newValue = !vimMode;
+                      setVimMode(newValue);
+                      localStorage.setItem("vimMode", String(newValue));
+                    }}
+                  >
+                    <span className="text-base">{vimMode ? 'Vim 模式 (已开启)' : 'Vim 模式'}</span>
+                  </button>
+
+                  {/* Image Management */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); setActiveId('images'); }}>
+                    <FontAwesomeIcon icon={faImages} className="text-xl w-6" />
+                    <span className="text-base">{t('editor:imageManagement')}</span>
+                  </button>
+
+                  {/* Reorder Problems */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => setShowReorder(true)}>
+                    <FontAwesomeIcon icon={faArrowsDownToLine} className="text-xl w-6" />
+                    <span className="text-base">重排题目</span>
+                  </button>
+
+                  {/* Load Example - Dropdown */}
+                  <div className="dropdown dropdown-bottom w-full">
+                    <label tabIndex={0} className="btn btn-outline btn-lg justify-start gap-4 h-14 w-full">
+                      <FontAwesomeIcon icon={faChevronDown} className="text-xl w-6" />
+                      <span className="text-base">{t('common:loadExample')}</span>
+                    </label>
+                    <ul tabIndex={0} className="dropdown-content menu p-2 shadow-xl bg-base-100 rounded-box w-full border border-base-300 mt-2">
+                      {Object.keys(exampleStatements).map((key) => (
+                        <li key={key}>
+                          <a onClick={() => { setShowSettings(false); handleLoadExample(key); }} className="text-base">
+                            {key}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="divider my-1">导入 / 导出</div>
+
+                  {/* Import Polygon */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleImportPolygonPackage(); }}>
+                    <FontAwesomeIcon icon={faFileZipper} className="text-xl w-6" />
+                    <span className="text-base">{t('common:importPolygonPackage')}</span>
+                  </button>
+
+                  {/* Import Config */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleImport(); }}>
+                    <FontAwesomeIcon icon={faUpload} className="text-xl w-6" />
+                    <span className="text-base">{t('common:importConfig')}</span>
+                  </button>
+
+                  {/* Export Config */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleExport(); }}>
+                    <FontAwesomeIcon icon={faFileCode} className="text-xl w-6" />
+                    <span className="text-base">{t('common:exportConfig')}</span>
+                  </button>
+                </div>
+              </div>
+              <div className="modal-backdrop" onClick={() => setShowSettings(false)}></div>
+            </div>
+          )}
+
+          {/* Reorder Modal */}
+          {showReorder && (
+            <div className="modal modal-open">
+              <div className="modal-box max-w-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-xl">重排题目</h3>
+                  <button className="btn btn-sm btn-ghost" onClick={() => setShowReorder(false)}>
+                    <FontAwesomeIcon icon={faX} />
+                  </button>
+                </div>
+                <SortableContext
+                  items={contestData.problems.map((p) => p.key!)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto select-none">
+                    {contestData.problems.map((problem, index) => (
+                      <SortableReorderItem
+                        key={problem.key}
+                        problem={problem}
+                        index={index}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+                <p className="text-sm text-gray-500 mt-4 text-center">拖拽题目以重新排序</p>
+              </div>
+              <div className="modal-backdrop" onClick={() => setShowReorder(false)}></div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Mobile Layout */
+        <div className="flex flex-col h-full w-full bg-white overflow-hidden">
+          <MobileToolbar
             contestData={contestData}
             activeId={activeId}
-            setActiveId={setActiveId}
+            onSelectProblem={setActiveId}
             onAddProblem={handleAddProblem}
-            onDeleteProblem={handleDeleteProblem}
+            onOpenSettings={() => setShowSettings(true)}
             onExportPdf={handleExportPdf}
-            onExportProblem={(key) => {
-              const problem = contestData.problems.find(p => p.key === key);
-              if (!problem) return;
-
-              compileProblemToPdf(contestData, key)
+            onExportCurrentProblem={activeId !== 'config' && activeId !== 'images' ? () => {
+              if (!activeId) return;
+              compileProblemToPdf(contestData, activeId)
                 .then(pdf => {
                   const blob = new Blob([new Uint8Array(pdf)], { type: "application/pdf" });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
-                  const index = contestData.problems.findIndex(p => p.key === key);
+                  const index = contestData.problems.findIndex(p => p.key === activeId);
                   const letter = String.fromCharCode(65 + index);
                   a.download = `${contestData.meta.title || "contest"}-${letter}.pdf`;
                   a.click();
@@ -358,195 +583,165 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
                 .catch(err => {
                   showToast(t('editor:exportFailed') + ': ' + (err instanceof Error ? err.message : String(err)), 'error');
                 });
-            }}
+            } : undefined}
             exportDisabled={exportDisabled}
-            onOpenSettings={() => setShowSettings(true)}
-            onOpenImages={() => setActiveId('images')}
-            previewVisible={previewVisible}
-            onTogglePreview={() => setPreviewVisible(!previewVisible)}
           />
-        </div>
 
-        {/* Main Content: Editor + Preview */}
-        <div className="flex-1 h-full min-w-0">
-          <Allotment>
-            {/* Editor Area */}
-            <Allotment.Pane minSize={350} preferredSize="40%">
+          <div className="flex-1 overflow-hidden">
+            {mobileTab === 'editor' ? (
               <EditorArea
                 contestData={contestData}
                 updateContestData={updateContestData}
                 activeId={activeId}
                 onDeleteProblem={handleDeleteProblem}
-                onExportCurrentProblem={() => {
-                  if (!activeId || activeId === 'config' || activeId === 'images') return;
-
-                  compileProblemToPdf(contestData, activeId)
-                    .then(pdf => {
-                      const blob = new Blob([new Uint8Array(pdf)], { type: "application/pdf" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      const index = contestData.problems.findIndex(p => p.key === activeId);
-                      const letter = String.fromCharCode(65 + index);
-                      a.download = `${contestData.meta.title || "contest"}-${letter}.pdf`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                      showToast(t('editor:exportSuccess'), 'success');
-                    })
-                    .catch(err => {
-                      showToast(t('editor:exportFailed') + ': ' + (err instanceof Error ? err.message : String(err)), 'error');
-                    });
-                }}
+                onExportCurrentProblem={undefined}
                 vimMode={vimMode}
               />
-            </Allotment.Pane>
-
-            {/* Preview Area */}
-            {previewVisible && (
-              <Allotment.Pane minSize={400}>
-                <PreviewArea
-                  data={previewData}
-                  previewRef={previewRef}
-                  isFullscreen={previewFullscreen}
-                  setFullscreen={setPreviewFullscreen}
-                />
-              </Allotment.Pane>
+            ) : (
+              <PreviewArea
+                data={previewData}
+                previewRef={previewRef}
+                isFullscreen={previewFullscreen}
+                setFullscreen={setPreviewFullscreen}
+              />
             )}
-          </Allotment>
-        </div>
-
-        {/* Custom Modal */}
-        {showConfirmModal && (
-          <div className="modal modal-open">
-            <div className="modal-box">
-              <h3 className="font-bold text-lg">{confirmModalContent.title}</h3>
-              <p className="py-4">{confirmModalContent.content}</p>
-              <div className="modal-action">
-                <button className="btn btn-ghost" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
-                  {t('common:cancel')}
-                </button>
-                <button className="btn btn-primary" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
-                  {t('common:continue')}
-                </button>
-              </div>
-            </div>
-            <div className="modal-backdrop" onClick={() => setShowConfirmModal(false)}></div>
           </div>
-        )}
 
-        {/* Settings Modal */}
-        {showSettings && (
-          <div className="modal modal-open">
-            <div className="modal-box max-w-md">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-xl">{t('common:settings')}</h3>
-                <button className="btn btn-sm btn-ghost" onClick={() => setShowSettings(false)}>
-                  <FontAwesomeIcon icon={faX} />
-                </button>
+          <MobileTabBar activeTab={mobileTab} onTabChange={setMobileTab} />
+
+          {/* Custom Modal */}
+          {showConfirmModal && (
+            <div className="modal modal-open">
+              <div className="modal-box">
+                <h3 className="font-bold text-lg">{confirmModalContent.title}</h3>
+                <p className="py-4">{confirmModalContent.content}</p>
+                <div className="modal-action">
+                  <button className="btn btn-ghost" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
+                    {t('common:cancel')}
+                  </button>
+                  <button className="btn btn-primary" onClick={() => { setShowConfirmModal(false); pendingAction?.(); }}>
+                    {t('common:continue')}
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col gap-4">
-                {/* Language Toggle */}
-                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); toggleLanguage(); }}>
-                  <FontAwesomeIcon icon={faLanguage} className="text-xl w-6" />
-                  <span className="text-base">{i18n.language === "zh" ? "切换到英文" : "Switch to 中文"}</span>
-                </button>
+              <div className="modal-backdrop" onClick={() => setShowConfirmModal(false)}></div>
+            </div>
+          )}
 
-                {/* Vim Mode Toggle */}
-                <button
-                  className={`btn btn-outline btn-lg justify-start gap-4 h-14 ${vimMode ? 'border-[#1D71B7] text-[#1D71B7]' : ''}`}
-                  onClick={() => {
-                    const newValue = !vimMode;
-                    setVimMode(newValue);
-                    localStorage.setItem("vimMode", String(newValue));
-                  }}
+          {/* Settings Modal */}
+          {showSettings && (
+            <div className="modal modal-open">
+              <div className="modal-box max-w-md">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-xl">{t('common:settings')}</h3>
+                  <button className="btn btn-sm btn-ghost" onClick={() => setShowSettings(false)}>
+                    <FontAwesomeIcon icon={faX} />
+                  </button>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {/* Language Toggle */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); toggleLanguage(); }}>
+                    <FontAwesomeIcon icon={faLanguage} className="text-xl w-6" />
+                    <span className="text-base">{i18n.language === "zh" ? "切换到英文" : "Switch to 中文"}</span>
+                  </button>
+
+                  {/* Vim Mode Toggle */}
+                  <button
+                    className={`btn btn-outline btn-lg justify-start gap-4 h-14 ${vimMode ? 'border-[#1D71B7] text-[#1D71B7]' : ''}`}
+                    onClick={() => {
+                      const newValue = !vimMode;
+                      setVimMode(newValue);
+                      localStorage.setItem("vimMode", String(newValue));
+                    }}
+                  >
+                    <span className="text-base">{vimMode ? 'Vim 模式 (已开启)' : 'Vim 模式'}</span>
+                  </button>
+
+                  {/* Image Management */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); setActiveId('images'); }}>
+                    <FontAwesomeIcon icon={faImages} className="text-xl w-6" />
+                    <span className="text-base">{t('editor:imageManagement')}</span>
+                  </button>
+
+                  {/* Reorder Problems */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => setShowReorder(true)}>
+                    <FontAwesomeIcon icon={faArrowsDownToLine} className="text-xl w-6" />
+                    <span className="text-base">重排题目</span>
+                  </button>
+
+                  {/* Load Example - Dropdown */}
+                  <div className="dropdown dropdown-bottom w-full">
+                    <label tabIndex={0} className="btn btn-outline btn-lg justify-start gap-4 h-14 w-full">
+                      <FontAwesomeIcon icon={faChevronDown} className="text-xl w-6" />
+                      <span className="text-base">{t('common:loadExample')}</span>
+                    </label>
+                    <ul tabIndex={0} className="dropdown-content menu p-2 shadow-xl bg-base-100 rounded-box w-full border border-base-300 mt-2">
+                      {Object.keys(exampleStatements).map((key) => (
+                        <li key={key}>
+                          <a onClick={() => { setShowSettings(false); handleLoadExample(key); }} className="text-base">
+                            {key}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="divider my-1">导入 / 导出</div>
+
+                  {/* Import Polygon */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleImportPolygonPackage(); }}>
+                    <FontAwesomeIcon icon={faFileZipper} className="text-xl w-6" />
+                    <span className="text-base">{t('common:importPolygonPackage')}</span>
+                  </button>
+
+                  {/* Import Config */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleImport(); }}>
+                    <FontAwesomeIcon icon={faUpload} className="text-xl w-6" />
+                    <span className="text-base">{t('common:importConfig')}</span>
+                  </button>
+
+                  {/* Export Config */}
+                  <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleExport(); }}>
+                    <FontAwesomeIcon icon={faFileCode} className="text-xl w-6" />
+                    <span className="text-base">{t('common:exportConfig')}</span>
+                  </button>
+                </div>
+              </div>
+              <div className="modal-backdrop" onClick={() => setShowSettings(false)}></div>
+            </div>
+          )}
+
+          {/* Reorder Modal */}
+          {showReorder && (
+            <div className="modal modal-open">
+              <div className="modal-box max-w-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-xl">重排题目</h3>
+                  <button className="btn btn-sm btn-ghost" onClick={() => setShowReorder(false)}>
+                    <FontAwesomeIcon icon={faX} />
+                  </button>
+                </div>
+                <SortableContext
+                  items={contestData.problems.map((p) => p.key!)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <span className="text-base">{vimMode ? 'Vim 模式 (已开启)' : 'Vim 模式'}</span>
-                </button>
-
-                {/* Image Management */}
-                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); setActiveId('images'); }}>
-                  <FontAwesomeIcon icon={faImages} className="text-xl w-6" />
-                  <span className="text-base">{t('editor:imageManagement')}</span>
-                </button>
-
-                {/* Reorder Problems */}
-                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => setShowReorder(true)}>
-                  <FontAwesomeIcon icon={faArrowsDownToLine} className="text-xl w-6" />
-                  <span className="text-base">重排题目</span>
-                </button>
-
-                {/* Load Example - Dropdown */}
-                <div className="dropdown dropdown-bottom w-full">
-                  <label tabIndex={0} className="btn btn-outline btn-lg justify-start gap-4 h-14 w-full">
-                    <FontAwesomeIcon icon={faChevronDown} className="text-xl w-6" />
-                    <span className="text-base">{t('common:loadExample')}</span>
-                  </label>
-                  <ul tabIndex={0} className="dropdown-content menu p-2 shadow-xl bg-base-100 rounded-box w-full border border-base-300 mt-2">
-                    {Object.keys(exampleStatements).map((key) => (
-                      <li key={key}>
-                        <a onClick={() => { setShowSettings(false); handleLoadExample(key); }} className="text-base">
-                          {key}
-                        </a>
-                      </li>
+                  <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto select-none">
+                    {contestData.problems.map((problem, index) => (
+                      <SortableReorderItem
+                        key={problem.key}
+                        problem={problem}
+                        index={index}
+                      />
                     ))}
-                  </ul>
-                </div>
-
-                <div className="divider my-1">导入 / 导出</div>
-
-                {/* Import Polygon */}
-                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleImportPolygonPackage(); }}>
-                  <FontAwesomeIcon icon={faFileZipper} className="text-xl w-6" />
-                  <span className="text-base">{t('common:importPolygonPackage')}</span>
-                </button>
-
-                {/* Import Config */}
-                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleImport(); }}>
-                  <FontAwesomeIcon icon={faUpload} className="text-xl w-6" />
-                  <span className="text-base">{t('common:importConfig')}</span>
-                </button>
-
-                {/* Export Config */}
-                <button className="btn btn-outline btn-lg justify-start gap-4 h-14" onClick={() => { setShowSettings(false); handleExport(); }}>
-                  <FontAwesomeIcon icon={faFileCode} className="text-xl w-6" />
-                  <span className="text-base">{t('common:exportConfig')}</span>
-                </button>
+                  </div>
+                </SortableContext>
+                <p className="text-sm text-gray-500 mt-4 text-center">拖拽题目以重新排序</p>
               </div>
+              <div className="modal-backdrop" onClick={() => setShowReorder(false)}></div>
             </div>
-            <div className="modal-backdrop" onClick={() => setShowSettings(false)}></div>
-          </div>
-        )}
-
-        {/* Reorder Modal */}
-        {showReorder && (
-          <div className="modal modal-open">
-            <div className="modal-box max-w-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-xl">重排题目</h3>
-                <button className="btn btn-sm btn-ghost" onClick={() => setShowReorder(false)}>
-                  <FontAwesomeIcon icon={faX} />
-                </button>
-              </div>
-              <SortableContext
-                items={contestData.problems.map((p) => p.key!)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto select-none">
-                  {contestData.problems.map((problem, index) => (
-                    <SortableReorderItem
-                      key={problem.key}
-                      problem={problem}
-                      index={index}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-              <p className="text-sm text-gray-500 mt-4 text-center">拖拽题目以重新排序</p>
-            </div>
-            <div className="modal-backdrop" onClick={() => setShowReorder(false)}></div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </DndContext>
   );
 };
