@@ -76,11 +76,25 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
     const saved = localStorage.getItem("vimMode");
     return saved ? saved === "true" : false;
   });
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'pending' | 'disabled'>('disabled');
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'pending' | 'disabled'>(() => {
+    try {
+      const savedSettings = localStorage.getItem("onlineSyncSettings");
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings);
+        if (parsed.enabled && parsed.config) {
+          return 'pending';
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return 'disabled';
+  });
   const [lastSyncTime, setLastSyncTime] = useState<number>();
   const lastSyncDataRef = useRef<string>('');
   const autoSyncInFlightRef = useRef(false);
   const previewRef = useRef<PreviewHandle>(null);
+  const isInitialLoadRef = useRef(true);
 
   // Responsive layout
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -121,7 +135,9 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
       const parsed = JSON.parse(savedSettings);
       if (parsed.enabled && parsed.config) {
         setLastSyncTime(parsed.lastSyncTime);
-        if (parsed.lastSyncTime && lastSyncDataRef.current) {
+        if (isInitialLoadRef.current) {
+          setSyncStatus('pending');
+        } else if (parsed.lastSyncTime && lastSyncDataRef.current) {
           setSyncStatus('synced');
         } else {
           setSyncStatus('pending');
@@ -215,14 +231,10 @@ const ContestEditorImpl: FC<{ initialData: ContestWithImages }> = ({ initialData
     []
   );
 
-  // 使用 ref 跟踪是否是首次加载
-  const isInitialLoadRef = useRef(true);
-
   useEffect(() => {
     // 首次加载时不自动同步，只记录当前状态
     if (isInitialLoadRef.current) {
       isInitialLoadRef.current = false;
-      lastSyncDataRef.current = contestDataStr;
       return;
     }
     
