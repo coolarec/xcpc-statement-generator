@@ -37,10 +37,10 @@ import "./index.css";
 const defaultProblemLimits: ProblemLimit[] = [
   { key: "Input file", value: "standard input" },
   { key: "Output file", value: "standard output" },
-  { key: "Time Limit", value: "1 second" },
-  { key: "Memory Limit", value: "512 megabytes" },
-  // { key: "author", value: "" },
-  // { key: "color", value: "" },
+  { key: "Time Limit", value: "1000 ms" },
+  { key: "Memory Limit", value: "256 MB / 262144 KB" },
+  { key: "author", value: "" },
+  { key: "color", value: "黑 / #000000" },
 ];
 
 const SortableReorderItem: FC<{ problem: ContestWithImages['problems'][0]; index: number }> = ({ problem, index }) => {
